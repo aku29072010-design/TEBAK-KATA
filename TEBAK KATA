@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teka-Teki: Kota, Buah, Negara & Hewan</title>
+    <!-- Tailwind CSS untuk tata letak responsif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js untuk efek suara sintesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a 65%, #020617);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        h1, h2, .game-font {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        .btn-3d {
+            transition: all 0.12s ease;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+        }
+        .btn-3d:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+        }
+        .btn-3d:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Kotak huruf jawaban */
+        .letter-slot {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .letter-slot.filled {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-color: #93c5fd;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .letter-slot.correct {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-color: #6ee7b7;
+        }
+        .letter-slot.wrong {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border-color: #fca5a5;
+            animation: shake 0.35s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            50% { transform: translateX(6px); }
+            75% { transform: translateX(-4px); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between p-3 sm:p-6">
+
+    <!-- Header & Pilihan Kategori -->
+    <header class="w-full max-w-xl text-center">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold mb-2">
+            <span>🧩 KUIS TEBAK KATA</span>
+            <span>•</span>
+            <span id="sound-toggle" class="cursor-pointer hover:text-white">🔊 Suara: ON</span>
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-300 to-sky-300 floating">
+            Kota • Buah • Negara • Hewan
+        </h1>
+
+        <!-- Navigasi Kategori -->
+        <div class="grid grid-cols-5 gap-1.5 mt-4 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+            <button onclick="selectCategory('semua')" id="cat-semua" class="cat-btn py-2 px-1 rounded-xl text-xs font-bold transition-all bg-indigo-500 text-white shadow">
+                🎲 Semua
+            </button>
+            <button onclick="selectCategory('kota')" id="cat-kota" class="cat-btn py-2 px-1 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white">
+                🏙️ Kota
+            </button>
+            <button onclick="selectCategory('buah')" id="cat-buah" class="cat-btn py-2 px-1 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white">
+                🍎 Buah
+            </button>
+            <button onclick="selectCategory('negara')" id="cat-negara" class="cat-btn py-2 px-1 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white">
+                🌍 Negara
+            </button>
+            <button onclick="selectCategory('hewan')" id="cat-hewan" class="cat-btn py-2 px-1 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white">
+                🦁 Hewan
+            </button>
+        </div>
+    </header>
+
+    <!-- Panel Statistik -->
+    <section class="w-full max-w-xl grid grid-cols-3 gap-2 sm:gap-3 my-3">
+        <div class="bg-slate-800/70 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2 text-center">
+            <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Skor</span>
+            <span id="stat-score" class="game-font text-xl sm:text-2xl font-bold text-amber-400">0</span>
+        </div>
+        <div class="bg-slate-800/70 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2 text-center">
+            <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Terjawab</span>
+            <span id="stat-solved" class="game-font text-xl sm:text-2xl font-bold text-emerald-400">0</span>
+        </div>
+        <div class="bg-slate-800/70 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2 text-center">
+            <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Nyawa</span>
+            <span id="stat-lives" class="game-font text-lg sm:text-xl font-bold text-rose-400">❤️❤️❤️</span>
+        </div>
+    </section>
+
+    <!-- Area Kartu Teka-Teki Utama -->
+    <main class="w-full max-w-xl bg-slate-900/90 p-4 sm:p-6 rounded-3xl border-2 border-slate-800 shadow-2xl flex flex-col items-center relative">
+        
+        <!-- Lencana Kategori Soal -->
+        <div id="question-badge" class="px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 mb-3">
+            🏙️ TEBAK NAMA KOTA
+        </div>
+
+        <!-- Pertanyaan / Petunjuk Teka-Teki -->
+        <div class="w-full bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 text-center mb-5">
+            <p id="question-clue" class="text-sm sm:text-base text-slate-100 font-medium leading-relaxed">
+                Memuat teka-teki...
+            </p>
+            <p id="extra-hint" class="text-xs text-amber-300/90 mt-2 hidden font-semibold"></p>
+        </div>
+
+        <!-- Slot Kotak Jawaban -->
+        <div id="answer-slots" class="flex flex-wrap justify-center gap-1.5 sm:gap-2 mb-6 min-h-[48px]">
+            <!-- Kotak huruf akan dirender di sini -->
+        </div>
+
+        <!-- Papan Huruf Acak (Pilihan Huruf) -->
+        <div id="letter-bank" class="flex flex-wrap justify-center gap-1.5 sm:gap-2 w-full max-w-md mb-4">
+            <!-- Tombol huruf acak dirender di sini -->
+        </div>
+
+        <!-- Modal Jawaban Benar / Game Over -->
+        <div id="result-modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center p-6 text-center z-20">
+            <div id="modal-emoji" class="text-5xl mb-3">🎉</div>
+            <h2 id="modal-title" class="text-2xl sm:text-3xl font-bold text-emerald-400 mb-1">Tepat Sekali!</h2>
+            <p id="modal-answer" class="text-lg font-bold text-amber-300 tracking-widest mb-1">BANDUNG</p>
+            <p id="modal-fact" class="text-slate-300 text-xs sm:text-sm mb-5 max-w-sm">
+                Fakta menarik akan muncul di sini.
+            </p>
+            <button id="modal-btn" onclick="nextQuestion()" class="btn-3d w-full max-w-xs py-3 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-base hover:brightness-110">
+                Soal Berikutnya ➡️
+            </button>
+        </div>
+    </main>
+
+    <!-- Tombol Bantuan Bawah -->
+    <footer class="w-full max-w-xl grid grid-cols-3 gap-2 sm:gap-3 mt-4">
+        <button onclick="clearCurrentInput()" class="btn-3d py-2.5 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5">
+            <span>⌫</span> Hapus
+        </button>
+        <button onclick="useHint()" class="btn-3d py-2.5 px-3 rounded-2xl bg-amber-600 hover:bg-amber-500 border border-amber-400 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5">
+            <span>💡</span> Buka Huruf (-5)
+        </button>
+        <button onclick="skipQuestion()" class="btn-3d py-2.5 px-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5">
+            <span>⏭️</span> Lewati
+        </button>
+    </footer>
+
+    <!-- Notifikasi Toast -->
+    <div id="toast-box" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-800 border border-indigo-400/50 text-white px-4 py-2 rounded-full text-xs sm:text-sm shadow-xl opacity-0 pointer-events-none transition-opacity duration-300 z-50 text-center">
+        Notifikasi
+    </div>
+
+    <script>
+        // ==========================================
+        // BANK SOAL TEKA-TEKI (KOTA, BUAH, NEGARA, HEWAN)
+        // ==========================================
+        const PUZZLE_BANK = [
+            // --- KATEGORI KOTA ---
+            { category: 'kota', word: 'BANDUNG', clue: 'Aku dijuluki Kota Kembang dan terkenal dengan Gedung Sate serta udara sejuknya di Jawa Barat.', fact: 'Bandung menjadi tuan rumah Konferensi Asia-Afrika pada tahun 1955.' },
+            { category: 'kota', word: 'SURABAYA', clue: 'Kota Pahlawan di Jawa Timur yang lambangnya adalah pertarungan ikan hiu dan buaya.', fact: 'Surabaya adalah kota metropolitan terbesar kedua di Indonesia.' },
+            { category: 'kota', word: 'YOGYAKARTA', clue: 'Kota pelajar dan budaya yang memiliki Jalan Malioboro dan dipimpin oleh seorang Sultan.', fact: 'Yogyakarta merupakan Daerah Istimewa dengan sejarah kesultanan yang kental.' },
+            { category: 'kota', word: 'TOKYO', clue: 'Ibu kota negara Jepang yang terkenal dengan menara tinggi, anime, dan persimpangan Shibuya yang super sibuk.', fact: 'Tokyo merupakan kawasan metropolitan dengan penduduk terpadat di dunia.' },
+            { category: 'kota', word: 'PARIS', clue: 'Ibu kota negara Prancis yang dijuluki Kota Cahaya dan menjadi rumah bagi Menara Eiffel.', fact: 'Paris juga dikenal sebagai pusat mode dan seni dunia.' },
+            { category: 'kota', word: 'MAKASSAR', clue: 'Kota terbesar di Pulau Sulawesi yang terkenal dengan Pantai Losari dan hidangan Coto.', fact: 'Dahulu kota ini dikenal sebagai pusat perdagangan rempah bernama Ujung Pandang.' },
+            { category: 'kota', word: 'DENPASAR', clue: 'Ibu kota Provinsi Bali yang menjadi gerbang utama wisata Pulau Dewata.', fact: 'Nama Denpasar berasal dari kata "den" (utara) dan "pasar".' },
+            { category: 'kota', word: 'LONDON', clue: 'Ibu kota Inggris yang dilintasi Sungai Thames dan memiliki jam raksasa Big Ben.', fact: 'Kereta bawah tanah London (The Tube) adalah yang tertua di dunia.' },
+
+            // --- KATEGORI BUAH ---
+            { category: 'buah', word: 'DURIAN', clue: 'Aku dijuluki Raja Buah, kulitku penuh duri tajam, bauku sangat menyengat, tapi dagingku manis legit.', fact: 'Durian kaya akan energi, vitamin C, dan kalium.' },
+            { category: 'buah', word: 'MANGGIS', clue: 'Dijuluki Ratu Buah, kulitku berwarna ungu tua tebal, dan jumlah kelopak di bawahku menandakan jumlah isi putih di dalamku.', fact: 'Kulit manggis sering dimanfaatkan untuk ekstrak antioksidan.' },
+            { category: 'buah', word: 'SEMANGKA', clue: 'Bentukku bulat besar, kulitku hijau bergaris, dagingku merah segar dan mengandung lebih dari 90% air.', fact: 'Semangka sangat cocok dimakan saat cuaca panas untuk mencegah dehidrasi.' },
+            { category: 'buah', word: 'NANAS', clue: 'Aku memakai mahkota daun berduri di kepalaku, kulitku bersisik kuning, dan rasaku manis asam menyegarkan.', fact: 'Nanas mengandung enzim bromelain yang membantu mencerna protein.' },
+            { category: 'buah', word: 'RAMBUTAN', clue: 'Buah tropis berukuran kecil yang seluruh kulitnya dipenuhi rambut-rambut lunak berwarna merah atau kuning.', fact: 'Nama rambutan berasal dari bentuk kulitnya yang menyerupai rambut.' },
+            { category: 'buah', word: 'ALPUKAT', clue: 'Dagingku berwarna hijau kekuningan lembut, bijiku satu besar di tengah, dan sering dibuat jus atau campuran es teler.', fact: 'Alpukat kaya akan lemak tak jenuh tunggal yang baik untuk kesehatan jantung.' },
+            { category: 'buah', word: 'STROBERI', clue: 'Buah mungil berwarna merah cerah dengan bintik-bintik biji di bagian luar kulitnya.', fact: 'Stroberi adalah satu-satunya buah yang bijinya berada di bagian luar.' },
+            { category: 'buah', word: 'KELAPA', clue: 'Pohonku dijuluki pohon seribu guna; airku menyegarkan dan daging putihku bisa diperas menjadi santan.', fact: 'Buah kelapa bisa mengapung di laut dan menyebar ke pulau-pulau jauh.' },
+
+            // --- KATEGORI NEGARA ---
+            { category: 'negara', word: 'INDONESIA', clue: 'Negara kepulauan terbesar di dunia yang dilintasi garis khatulistiwa dan memiliki semboyan Bhinneka Tunggal Ika.', fact: 'Indonesia memiliki lebih dari 17.000 pulau dan ratusan bahasa daerah.' },
+            { category: 'negara', word: 'JEPANG', clue: 'Dijuluki Negeri Matahari Terbit dan Negeri Sakura, terkenal dengan Gunung Fuji serta kereta cepat Shinkansen.', fact: 'Jepang terdiri dari lebih dari 6.800 pulau di Samudra Pasifik.' },
+            { category: 'negara', word: 'MESIR', clue: 'Negara di Afrika Utara yang terkenal dengan Piramida Giza, Sphinx, dan Sungai Nil yang panjang.', fact: 'Peradaban Mesir Kuno adalah salah satu peradaban tertua di dunia.' },
+            { category: 'negara', word: 'BRASIL', clue: 'Negara terbesar di Amerika Selatan yang terkenal dengan hutan hujan Amazon dan juara Piala Dunia sepak bola terbanyak.', fact: 'Brasil adalah satu-satunya negara di Amerika yang berbahasa resmi Portugis.' },
+            { category: 'negara', word: 'AUSTRALIA', clue: 'Negara yang sekaligus merupakan sebuah benua, rumah bagi hewan berkantung seperti kanguru dan koala.', fact: 'Ibu kota Australia adalah Canberra, bukan Sydney atau Melbourne.' },
+            { category: 'negara', word: 'ITALIA', clue: 'Negara di Eropa Selatan yang petanya berbentuk seperti sepatu bot dan terkenal dengan pizza, pasta, serta Menara Pisa.', fact: 'Italia memiliki situs Warisan Dunia UNESCO terbanyak di dunia.' },
+            { category: 'negara', word: 'THAILAND', clue: 'Negara di Asia Tenggara yang dijuluki Negeri Gajah Putih dan tidak pernah dijajah bangsa Eropa.', fact: 'Ibu kota Thailand adalah Bangkok yang terkenal dengan wisata kulinernya.' },
+            { category: 'negara', word: 'KANADA', clue: 'Negara luas di Amerika Utara yang benderanya bergambar daun mapel merah dan terkenal dengan sirup mapel.', fact: 'Kanada memiliki garis pantai terpanjang di dunia.' },
+
+            // --- KATEGORI HEWAN ---
+            { category: 'hewan', word: 'KOMODO', clue: 'Kadal purba raksasa endemik Indonesia yang hanya hidup liar di beberapa pulau di Nusa Tenggara Timur.', fact: 'Komodo merupakan spesies kadal terbesar di dunia yang masih hidup.' },
+            { category: 'hewan', word: 'JERAPAH', clue: 'Mamalia darat tertinggi di dunia dengan leher sangat panjang dan pola totol cokelat di tubuhnya.', fact: 'Lidah jerapah berwarna biru kehitaman dan panjangnya bisa mencapai 45 cm.' },
+            { category: 'hewan', word: 'PINGUIN', clue: 'Burung yang tidak bisa terbang namun perenang ulung, memakai "tuksedo" hitam putih, dan hidup di belahan bumi selatan.', fact: 'Pinguin memiliki lapisan lemak tebal untuk bertahan di suhu beku Antartika.' },
+            { category: 'hewan', word: 'BUNGLON', clue: 'Reptil unik yang mampu mengubah warna kulitnya untuk berkamuflase dan memiliki lidah panjang lengket.', fact: 'Kedua mata bunglon dapat bergerak secara independen ke arah yang berbeda.' },
+            { category: 'hewan', word: 'LUMBALUMBA', clue: 'Mamalia laut yang sangat cerdas, ramah, dan berkomunikasi menggunakan gelombang sonar (ekolokasi).', fact: 'Lumba-lumba tidur dengan mengistirahatkan setengah bagian otaknya secara bergantian.' },
+            { category: 'hewan', word: 'CENDRAWASIH', clue: 'Burung surga dari Papua yang memiliki bulu ekor sangat indah berwarna cerah untuk menarik perhatian pasangan.', fact: 'Burung Cendrawasih menjadi maskot kebanggaan fauna dari tanah Papua.' },
+            { category: 'hewan', word: 'HARIMAU', clue: 'Kucing besar pemangsa dengan corak loreng oranye dan hitam yang khas; jenis Sumatera-nya dilindungi.', fact: 'Pola loreng setiap harimau unik, mirip seperti sidik jari pada manusia.' },
+            { category: 'hewan', word: 'KELELAWAR', clue: 'Satu-satunya mamalia yang dapat terbang sejati, aktif di malam hari, dan tidur bergelantungan terbalik.', fact: 'Kelelawar berperan penting dalam penyerbukan bunga dan pengendalian serangga.' }
+        ];
+
+        // ==========================================
+        // STATE PERMAINAN
+        // ==========================================
+        let selectedCategory = 'semua';
+        let currentPuzzle = null;
+        let usedIndices = [];
+        let userInput = []; // Menyimpan objek { char, bankIndex }
+        let bankLetters = []; // Huruf-huruf acak yang tersedia
+        let score = 0;
+        let solvedCount = 0;
+        let lives = 3;
+        let soundEnabled = true;
+
+        // ==========================================
+        // EFEK SUARA (TONE.JS)
+        // ==========================================
+        let synth = null;
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (!synth && typeof Tone !== 'undefined') {
+                    synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                    synth.volume.value = -10;
+                }
+                if (!synth) return;
+                if (Tone.context.state !== 'running') Tone.start();
+
+                const now = Tone.now();
+                if (type === 'tap') {
+                    synth.triggerAttackRelease("C5", "32n", now);
+                } else if (type === 'remove') {
+                    synth.triggerAttackRelease("A4", "32n", now);
+                } else if (type === 'wrong') {
+                    synth.triggerAttackRelease("G3", "16n", now);
+                    synth.triggerAttackRelease("F#3", "8n", now + 0.1);
+                } else if (type === 'win') {
+                    synth.triggerAttackRelease("C5", "16n", now);
+                    synth.triggerAttackRelease("E5", "16n", now + 0.08);
+                    synth.triggerAttackRelease("G5", "16n", now + 0.16);
+                    synth.triggerAttackRelease("C6", "8n", now + 0.24);
+                } else if (type === 'hint') {
+                    synth.triggerAttackRelease("D5", "16n", now);
+                }
+            } catch (e) {}
+        }
+
+        document.getElementById('sound-toggle').addEventListener('click', function() {
+            soundEnabled = !soundEnabled;
+            this.textContent = soundEnabled ? '🔊 Suara: ON' : '🔇 Suara: OFF';
+        });
+
+        // ==========================================
+        // PEMILIHAN KATEGORI & SOAL
+        // ==========================================
+        function selectCategory(cat) {
+            playSound('tap');
+            selectedCategory = cat;
+            usedIndices = [];
+
+            // Perbarui tampilan tombol kategori
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn py-2 px-1 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white";
+            });
+            const activeBtn = document.getElementById(`cat-${cat}`);
+            activeBtn.className = "cat-btn py-2 px-1 rounded-xl text-xs font-bold transition-all bg-indigo-500 text-white shadow";
+
+            loadNewPuzzle();
+        }
+
+        function loadNewPuzzle() {
+            document.getElementById('result-modal').classList.add('hidden');
+            document.getElementById('extra-hint').classList.add('hidden');
+
+            // Filter soal berdasarkan kategori
+            let pool = PUZZLE_BANK.map((item, idx) => ({ ...item, originalIdx: idx }))
+                .filter(item => selectedCategory === 'semua' || item.category === selectedCategory);
+
+            // Reset riwayat jika semua soal dalam kategori sudah dimainkan
+            let available = pool.filter(item => !usedIndices.includes(item.originalIdx));
+            if (available.length === 0) {
+                usedIndices = [];
+                available = pool;
+                showToast("Semua soal di kategori ini telah diulang!");
+            }
+
+            // Pilih soal acak
+            const chosen = available[Math.floor(Math.random() * available.length)];
+            usedIndices.push(chosen.originalIdx);
+            currentPuzzle = chosen;
+
+            // Update Lencana Kategori & Petunjuk
+            const badgeMap = {
+                kota: { text: '🏙️ TEBAK NAMA KOTA', style: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
+                buah: { text: '🍎 TEBAK NAMA BUAH', style: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
+                negara: { text: '🌍 TEBAK NAMA NEGARA', style: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+                hewan: { text: '🦁 TEBAK NAMA HEWAN', style: 'bg-amber-500/20 text-amber-300 border-amber-500/40' }
+            };
+            const badge = document.getElementById('question-badge');
+            badge.textContent = badgeMap[chosen.category].text;
+            badge.className = `px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider border mb-3 ${badgeMap[chosen.category].style}`;
+
+            document.getElementById('question-clue').textContent = `"${chosen.clue}"`;
+
+            // Siapkan slot kosong dan huruf acak
+            const targetWord = chosen.word.toUpperCase();
+            userInput = Array(targetWord.length).fill(null);
+
+            // Buat bank huruf (huruf jawaban + beberapa huruf pengecoh)
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            let letters = targetWord.split('');
+            const decoyCount = Math.max(4, 14 - letters.length);
+            for (let i = 0; i < decoyCount; i++) {
+                letters.push(alphabet[Math.floor(Math.random() * alphabet.length)]);
+            }
+
+            // Acak urutan bank huruf (Fisher-Yates Shuffle)
+            for (let i = letters.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [letters[i], letters[j]] = [letters[j], letters[i]];
+            }
+
+            bankLetters = letters.map((char, idx) => ({
+                id: idx,
+                char: char,
+                used: false
+            }));
+
+            renderGame();
+        }
+
+        // ==========================================
+        // RENDER KOTAK JAWABAN & PAPAN HURUF
+        // ==========================================
+        function renderGame() {
+            const slotsContainer = document.getElementById('answer-slots');
+            const bankContainer = document.getElementById('letter-bank');
+            slotsContainer.innerHTML = '';
+            bankContainer.innerHTML = '';
+
+            // Sesuaikan ukuran kotak jika kata panjang (misal: YOGYAKARTA / LUMBALUMBA)
+            const wordLen = currentPuzzle.word.length;
+            const slotSizeClass = wordLen >= 9
+                ? 'w-8 h-10 sm:w-10 sm:h-12 text-base sm:text-xl'
+                : 'w-10 h-12 sm:w-12 sm:h-14 text-lg sm:text-2xl';
+
+            // Render slot jawaban
+            userInput.forEach((item, slotIdx) => {
+                const slot = document.createElement('button');
+                slot.className = `letter-slot ${slotSizeClass} rounded-xl border-2 font-bold game-font flex items-center justify-center ${
+                    item ? 'filled text-white cursor-pointer' : 'bg-slate-800/80 border-slate-600 text-slate-500'
+                }`;
+                slot.textContent = item ? item.char : '';
+                slot.onclick = () => removeLetterFromSlot(slotIdx);
+                slotsContainer.appendChild(slot);
+            });
+
+            // Render tombol huruf acak
+            bankLetters.forEach((bItem, bankIdx) => {
+                const btn = document.createElement('button');
+                btn.disabled = bItem.used;
+                btn.className = `btn-3d w-10 h-11 sm:w-11 sm:h-12 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold game-font text-lg sm:text-xl flex items-center justify-center`;
+                btn.textContent = bItem.char;
+                btn.onclick = () => selectBankLetter(bankIdx);
+                bankContainer.appendChild(btn);
+            });
+        }
+
+        // ==========================================
+        // LOGIKA INPUT & VALIDASI JAWABAN
+        // ==========================================
+        function selectBankLetter(bankIdx) {
+            const bItem = bankLetters[bankIdx];
+            if (bItem.used) return;
+
+            // Cari slot kosong pertama
+            const emptySlotIdx = userInput.findIndex(val => val === null);
+            if (emptySlotIdx === -1) return;
+
+            playSound('tap');
+            bItem.used = true;
+            userInput[emptySlotIdx] = { char: bItem.char, bankIdx: bankIdx, locked: false };
+            renderGame();
+
+            // Jika semua slot sudah terisi, periksa jawaban otomatis
+            if (userInput.every(val => val !== null)) {
+                checkAnswer();
+            }
+        }
+
+        function removeLetterFromSlot(slotIdx) {
+            const item = userInput[slotIdx];
+            if (!item || item.locked) return; // Huruf bantuan tidak bisa dihapus
+
+            playSound('remove');
+            bankLetters[item.bankIdx].used = false;
+            userInput[slotIdx] = null;
+            renderGame();
+        }
+
+        function clearCurrentInput() {
+            playSound('remove');
+            userInput.forEach((item, idx) => {
+                if (item && !item.locked) {
+                    bankLetters[item.bankIdx].used = false;
+                    userInput[idx] = null;
+                }
+            });
+            renderGame();
+        }
+
+        function checkAnswer() {
+            const guess = userInput.map(item => item.char).join('');
+            const target = currentPuzzle.word.toUpperCase();
+
+            if (guess === target) {
+                // JAWABAN BENAR!
+                playSound('win');
+                score += 10;
+                solvedCount += 1;
+                updateStats();
+
+                // Tandai semua kotak hijau
+                document.querySelectorAll('.letter-slot').forEach(el => el.classList.add('correct'));
+
+                setTimeout(() => {
+                    showModal(
+                        '🎉',
+                        'Jawaban Benar!',
+                        target,
+                        currentPuzzle.fact,
+                        'Soal Berikutnya ➡️',
+                        false
+                    );
+                }, 400);
+            } else {
+                // JAWABAN SALAH
+                playSound('wrong');
+                lives--;
+                updateStats();
+
+                document.querySelectorAll('.letter-slot').forEach(el => el.classList.add('wrong'));
+
+                if (lives <= 0) {
+                    setTimeout(() => {
+                        showModal(
+                            '💔',
+                            'Kesempatan Habis!',
+                            `Jawabannya: ${target}`,
+                            `Skor akhir Anda: ${score} poin (${solvedCount} teka-teki terpecahkan).`,
+                            'Main Lagi 🔄',
+                            true
+                        );
+                    }, 500);
+                } else {
+                    showToast(`Kurang tepat! Sisa nyawa: ${lives}`);
+                    setTimeout(() => {
+                        clearCurrentInput();
+                    }, 600);
+                }
+            }
+        }
+
+        // ==========================================
+        // FITUR BANTUAN (PETUNJUK & LEWATI)
+        // ==========================================
+        function useHint() {
+            if (score < 5) {
+                showToast("Skor minimal 5 poin untuk membuka huruf petunjuk!");
+                return;
+            }
+
+            const target = currentPuzzle.word.toUpperCase();
+            // Cari indeks huruf yang belum benar/terkunci
+            let targetIdx = -1;
+            for (let i = 0; i < target.length; i++) {
+                if (!userInput[i] || userInput[i].char !== target[i]) {
+                    targetIdx = i;
+                    break;
+                }
+            }
+
+            if (targetIdx === -1) return;
+
+            playSound('hint');
+            score -= 5;
+            updateStats();
+
+            // Jika slot tersebut sedang diisi huruf salah, kembalikan ke bank
+            if (userInput[targetIdx]) {
+                bankLetters[userInput[targetIdx].bankIdx].used = false;
+            }
+
+            const neededChar = target[targetIdx];
+            // Cari huruf yang dibutuhkan di bankLetters (yang belum dipakai)
+            let bIdx = bankLetters.findIndex(b => b.char === neededChar && !b.used);
+
+            // Jika huruf tersebut sedang terpakai di slot lain yang salah, tarik dari slot tersebut
+            if (bIdx === -1) {
+                const wrongSlotIdx = userInput.findIndex((u, idx) => u && !u.locked && u.char === neededChar);
+                if (wrongSlotIdx !== -1) {
+                    bIdx = userInput[wrongSlotIdx].bankIdx;
+                    userInput[wrongSlotIdx] = null;
+                }
+            }
+
+            if (bIdx !== -1) {
+                bankLetters[bIdx].used = true;
+                userInput[targetIdx] = { char: neededChar, bankIdx: bIdx, locked: true };
+                renderGame();
+                showToast(`Huruf ke-${targetIdx + 1} adalah "${neededChar}"!`);
+
+                if (userInput.every(val => val !== null)) {
+                    checkAnswer();
+                }
+            }
+        }
+
+        function skipQuestion() {
+            playSound('remove');
+            showToast(`Jawaban sebelumnya adalah: ${currentPuzzle.word}`);
+            loadNewPuzzle();
+        }
+
+        // ==========================================
+        // MODAL, STATISTIK & KEYBOARD SUPPORT
+        // ==========================================
+        function showModal(emoji, title, answerText, factText, btnText, isGameOver) {
+            document.getElementById('modal-emoji').textContent = emoji;
+            const titleEl = document.getElementById('modal-title');
+            titleEl.textContent = title;
+            titleEl.className = `text-2xl sm:text-3xl font-bold mb-1 ${isGameOver ? 'text-rose-400' : 'text-emerald-400'}`;
+
+            document.getElementById('modal-answer').textContent = answerText;
+            document.getElementById('modal-fact').textContent = factText;
+
+            const btn = document.getElementById('modal-btn');
+            btn.textContent = btnText;
+            btn.onclick = isGameOver ? restartFullGame : loadNewPuzzle;
+
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+
+        function restartFullGame() {
+            score = 0;
+            solvedCount = 0;
+            lives = 3;
+            usedIndices = [];
+            updateStats();
+            loadNewPuzzle();
+        }
+
+        function updateStats() {
+            document.getElementById('stat-score').textContent = score;
+            document.getElementById('stat-solved').textContent = solvedCount;
+            document.getElementById('stat-lives').textContent = lives > 0 ? '❤️'.repeat(lives) : '💀';
+        }
+
+        let toastTimeout;
+        function showToast(msg) {
+            const toast = document.getElementById('toast-box');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2600);
+        }
+
+        // Dukungan ketik langsung lewat keyboard fisik
+        document.addEventListener('keydown', (e) => {
+            if (!document.getElementById('result-modal').classList.contains('hidden')) {
+                if (e.key === 'Enter') document.getElementById('modal-btn').click();
+                return;
+            }
+
+            if (e.key === 'Backspace') {
+                // Hapus huruf terakhir yang tidak terkunci
+                for (let i = userInput.length - 1; i >= 0; i--) {
+                    if (userInput[i] && !userInput[i].locked) {
+                        removeLetterFromSlot(i);
+                        break;
+                    }
+                }
+                return;
+            }
+
+            const key = e.key.toUpperCase();
+            if (/^[A-Z]$/.test(key)) {
+                const bankIdx = bankLetters.findIndex(b => b.char === key && !b.used);
+                if (bankIdx !== -1) {
+                    selectBankLetter(bankIdx);
+                }
+            }
+        });
+
+        window.onload = function() {
+            updateStats();
+            loadNewPuzzle();
+        };
+    </script>
+</body>
+</html>
