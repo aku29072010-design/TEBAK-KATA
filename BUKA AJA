@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hei Kamu 💌</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #0f172a, #1e293b);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 25px;
+            color: white;
+            text-align: center;
+            position: relative;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 36px;
+            margin-bottom: 30px;
+        }
+
+        p {
+            font-size: 20px;
+            line-height: 1.8;
+            max-width: 450px;
+            margin-bottom: 20px;
+        }
+
+        .hint {
+            font-size: 18px;
+            opacity: 0.7;
+            margin-top: 30px;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 25px;
+            margin-top: 35px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 15px 45px;
+            font-size: 22px;
+            border: 2px solid white;
+            border-radius: 12px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: white;
+            color: #0f172a;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 24px;
+            animation: floatUp 4s ease-out infinite;
+            opacity: 0;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100px); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(-200px); opacity: 0; }
+        }
+
+        .hidden { display: none; }
+
+        .mau-btn { background: #16a34a; border-color: #16a34a; }
+        .mau-btn:hover { background: #15803d; color: white; }
+
+        .gatau-btn {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Halaman 1: Pembukaan -->
+    <div class="page" id="page1">
+        <div class="avatar">🌹</div>
+        <h1>Hei Kamu! 😊</h1>
+        <p>Aku boleh jujur enggak nih? 😊</p>
+        <p class="hint">↓ Scroll terus ke bawah ya :)</p>
+    </div>
+
+    <!-- Halaman 2: Sebenarnya -->
+    <div class="page" id="page2">
+        <div class="avatar">🥺</div>
+        <h2>Sebenarnya..</h2>
+        <p>Aku suka sama kamu :(</p>
+    </div>
+
+    <!-- Halaman 3: Alasan -->
+    <div class="page" id="page3">
+        <p>Kalo kamu tanya kenapa aku suka sama kamu, itu karena aku punya rasa nyaman tersendiri yang ga akan aku temui di mana pun.</p>
+        <p><strong>Kamu Tau?</strong><br>Gaada yang bisa bikin aku nyaman selain kamu..</p>
+        <p>Dan karena mengenalimu, aku merasakan apa itu kenyamanan, apa itu kebahagiaan, dan kamu sekaligus rumah bagiku :)</p>
+    </div>
+
+    <!-- Halaman 4: Pertanyaan -->
+    <div class="page" id="page4">
+        <div class="avatar">🥰</div>
+        <h2>Intinya,</h2>
+        <h2>Kamu Mau Gak Jadi Pacar Aku? 😍❤️</h2>
+        <div class="btn-container">
+            <button class="mau-btn" onclick="terima()">Mau</button>
+            <button class="gatau-btn" id="gatauBtn" onmouseover="pindahBtn()">Gamau</button>
+        </div>
+    </div>
+
+    <!-- Halaman 5: Terima Kasih -->
+    <div class="page hidden" id="page5">
+        <div class="avatar">🐼❤️</div>
+        <h2>I Love You ❤️</h2>
+        <p>Makasii udah mau nerima aku jadi pacar kamu, hihi 🥰❤️</p>
+        <p>Jangan lupa balas pesan ke WhatsApp aku ya! ✨</p>
+        <button onclick="balasWA()">Balas 💌</button>
+    </div>
+
+<script>
+    // Tombol Gamau pindah pas didekatin
+    let countPindah = 0;
+    function pindahBtn() {
+        const btn = document.getElementById('gatauBtn');
+        countPindah++;
+        const x = Math.random() * 200 - 100;
+        const y = Math.random() * 200 - 100;
+        btn.style.transform = `translate(${x}px, ${y}px)`;
+        
+        if (countPindah > 8) {
+            btn.textContent = "Pikir dulu deh 🥺";
+        }
+    }
+
+    // Klik Mau → tampilkan halaman terima kasih
+    function terima() {
+        document.getElementById('page4').classList.add('hidden');
+        document.getElementById('page5').classList.remove('hidden');
+        buatHati();
+    }
+
+    // Efek hati terbang
+    function buatHati() {
+        const hearts = ['❤️', '💕', '💖', '💗', '💓', '✨'];
+        setInterval(() => {
+            const heart = document.createElement('span');
+            heart.className = 'heart';
+            heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+            heart.style.left = Math.random() * 100 + '%';
+            heart.style.bottom = '50px';
+            document.getElementById('page5').appendChild(heart);
+            setTimeout(() => heart.remove(), 4000);
+        }, 400);
+    }
+
+    // Tombol Balas WhatsApp
+    function balasWA() {
+        // Ganti nomor ini dengan nomor WA kamu ya!
+        window.open('https://wa.me/6281234567890?text=Aku%20mau%20jadi%20pacarmu%21%20❤️', '_blank');
+    }
+</script>
+
+</body>
+</html>
